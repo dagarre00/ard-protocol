@@ -12,9 +12,13 @@ long timer = millis();
 const uint8_t key1 = 0xA4;
 const uint8_t key2 = 0xA6;
 
+bool parsed_data = false;
+
 Package dataParser(Datalink link, Stream &uart);
 
 static Package pack = dataParser(datalink, Serial);
+
+// Funciones del dispatcher:
 
 uint16_t funcion_prueba_1(uint16_t val)
 {
@@ -30,42 +34,48 @@ uint16_t funcion_prueba_2(uint16_t val)
     return 0;
 }
 
+// Obtener paquete desde serial:
+
 Package dataParser(Datalink link, Stream &uart)
 {
     link.read(uart);
     uint8_t size = link.available();
     if (size)
     {
+        parsed_data = true;
         return Package(link.getPayload(), size);
     }
     else
     {
+        if (parsed_data) parsed_data = false;
         return Package(0);
     }
 }
 
+//Funciones FreeRTOS (Multi task):
+
 void parseDataTask(void *parameter)
 {
-    TickType_t xLastWakeTime;
-    xLastWakeTime = xTaskGetTickCount ();
-    Package *pack_ptr = (Package *)parameter;
+    TickType_t xLastWakeTime; // Variable necesaria para vTaskDelayUntil()
+    xLastWakeTime = xTaskGetTickCount(); // Funcion similar a millis()
     while (true)
     {
-        vTaskDelayUntil(&xLastWakeTime, 100 / portTICK_PERIOD_MS);
-        *pack_ptr = dataParser(datalink, Serial);
+        vTaskDelayUntil(&xLastWakeTime, 100 / portTICK_PERIOD_MS); // Similar a delay()
+        pack = dataParser(datalink, Serial);
     }
 }
 
 void checkForKeyTask(void *parameter)
 {
-    Package *pack_ptr = (Package *)parameter;
     while (true)
     {
-        if (pack_ptr->hasValue(0x0A))
-        {
-            Package output = Package(3);
-            output.addData(0x0B, pack_ptr->getValue(0x0A));
-            datalink.send(output.dump(), output.getSize(), Serial);
+        if (parsed_data) {
+            if (pack.hasValue(0x0A))
+            {
+                Package output = Package(3);
+                output.addData(0x0B, pack.getValue(0x0A));
+                datalink.send(output.dump(), output.getSize(), Serial);
+            }
         }
         vTaskDelay(send_freq / portTICK_PERIOD_MS);
     }
@@ -73,12 +83,11 @@ void checkForKeyTask(void *parameter)
 
 void dispatchTask(void *parameter)
 {
-    Package *pack_ptr = (Package *)parameter;
     while (true)
     {
-        if (pack_ptr->getIndex() != 0)
+        if (parsed_data)
         {
-            dispatch.readPackage(pack_ptr->dump(), pack_ptr->getSize());
+            dispatch.readPackage(pack.dump(), pack.getSize());
         }
         vTaskDelay(100 / portTICK_PERIOD_MS);
     }
@@ -90,16 +99,14 @@ void sendDataTask(void *parameter)
     xLastWakeTime = xTaskGetTickCount ();
     while (true)
     {
-        if (millis() - timer >= send_freq)
-        {
-            timer = millis();
-            Package output = Package(3);
-            output.addData(0xA4, 0);
-            datalink.send(output.dump(), output.getSize(), Serial);
-        }
-        vTaskDelayUntil(&xLastWakeTime, 100 / portTICK_PERIOD_MS);
+        Package output = Package(3);
+        output.addData(0xA4, 0);
+        datalink.send(output.dump(), output.getSize(), Serial);
+        vTaskDelayUntil(&xLastWakeTime, send_freq / portTICK_PERIOD_MS);
     }
 }
+
+//Inicio Arduino:
 
 void setup()
 {
@@ -115,6 +122,7 @@ void setup()
     xTaskCreate(checkForKeyTask, "Check for specific key", 4096, (void *)&pack, 1, NULL);
     xTaskCreate(dispatchTask, "Process the Package through dispatcher", 4096, (void *)&pack, 1, NULL);
     xTaskCreate(sendDataTask, "Send data periodically", 4096, NULL, 1, NULL);
+    
 }
 
 void loop()
