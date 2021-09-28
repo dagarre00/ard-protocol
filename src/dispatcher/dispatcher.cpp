@@ -9,7 +9,6 @@ uint16_t Handler::execute(uint16_t value_to_pass) {
 }
 
 Dispatcher::Dispatcher(uint8_t buffer_size) {
-    this->handler_index = 0;
     this->added_keys = new uint8_t[buffer_size];
     this->handle_list = new Handler[buffer_size];
 }
@@ -47,6 +46,5 @@ uint8_t Dispatcher::getHandleIndex(const uint8_t key) {
 
 void Dispatcher::handleKey(uint8_t key, uint16_t value) {
     uint8_t handler_index = getHandleIndex(key);
-    Handler local_handler = handle_list[handler_index];
-    local_handler.execute(value);
+    handle_list[handler_index].execute(value);
 }

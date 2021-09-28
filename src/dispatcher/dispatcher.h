@@ -25,7 +25,7 @@ private:
     uint8_t size;
     void handleKey(uint8_t key, uint16_t value);
     void addHandle(uint8_t key, uint16_t(*func)(uint16_t));
-    uint8_t handler_index;
+    uint8_t handler_index = 0;
     Handler* handle_list;
     uint8_t* added_keys;
 };
