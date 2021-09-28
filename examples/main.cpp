@@ -5,6 +5,7 @@
 
 Datalink datalink = Datalink(0x7E, 90);
 uint16_t send_freq = 3000;
+uint16_t read_freq = 100;
 Dispatcher dispatch = Dispatcher(255);
 
 long timer = millis();
@@ -47,7 +48,7 @@ Package dataParser(Datalink link, Stream &uart)
     }
     else
     {
-        if (parsed_data) parsed_data = false;
+        if (parsed_data) parsed_data = false; // evitar realizar escrituras en cada ciclo
         return Package(0);
     }
 }
@@ -60,7 +61,7 @@ void parseDataTask(void *parameter)
     xLastWakeTime = xTaskGetTickCount(); // Funcion similar a millis()
     while (true)
     {
-        vTaskDelayUntil(&xLastWakeTime, 100 / portTICK_PERIOD_MS); // Similar a delay()
+        vTaskDelayUntil(&xLastWakeTime, read_freq / portTICK_PERIOD_MS); // Similar a delay()
         pack = dataParser(datalink, Serial);
     }
 }
@@ -77,7 +78,7 @@ void checkForKeyTask(void *parameter)
                 datalink.send(output.dump(), output.getSize(), Serial);
             }
         }
-        vTaskDelay(send_freq / portTICK_PERIOD_MS);
+        vTaskDelay(read_freq / portTICK_PERIOD_MS);
     }
 }
 
@@ -89,7 +90,7 @@ void dispatchTask(void *parameter)
         {
             dispatch.readPackage(pack.dump(), pack.getSize());
         }
-        vTaskDelay(100 / portTICK_PERIOD_MS);
+        vTaskDelay(read_freq / portTICK_PERIOD_MS);
     }
 }
 
@@ -122,7 +123,7 @@ void setup()
     xTaskCreate(checkForKeyTask, "Check for specific key", 4096, (void *)&pack, 1, NULL);
     xTaskCreate(dispatchTask, "Process the Package through dispatcher", 4096, (void *)&pack, 1, NULL);
     xTaskCreate(sendDataTask, "Send data periodically", 4096, NULL, 1, NULL);
-    
+
 }
 
 void loop()
