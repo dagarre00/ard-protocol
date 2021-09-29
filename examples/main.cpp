@@ -54,16 +54,28 @@ Package dataParser(Datalink link, Stream& uart) {
 void parseDataTask(void* parameter) {
     TickType_t xLastWakeTime;            // Variable necesaria para vTaskDelayUntil()
     xLastWakeTime = xTaskGetTickCount(); // Funcion similar a millis()
+
     while (true) {
         vTaskDelayUntil(&xLastWakeTime, read_freq / portTICK_PERIOD_MS); // Similar a delay()
-        pack = dataParser(datalink, Serial);
+        pack = dataParser(datalink, Serial); // Crea el pack de data
+        
         if (parsed_data) {
+            // Buscar key unica
             if (pack.hasValue(0x0A)) {
                 Package output = Package(3);
                 output.addData(0x0B, pack.getValue(0x0A));
                 datalink.send(output.dump(), output.getSize(), Serial);
             }
-            dispatch.readPackage(pack.dump(), pack.getSize());
+
+            // Ejecutar el dispatcher:
+            try {
+                dispatch.readPackage(pack.dump(), pack.getSize());
+            }
+            catch (Exception& err) {
+                Serial.print("Codigo de error en funcion parseDataTask()");
+                Serial.println(err.getCode());
+            }
+
         }
     }
 }
@@ -85,8 +97,8 @@ void setup() {
     Serial.begin(115200);
     Serial.setTimeout(1000);
 
-    dispatch.attachHandle(Handler(*funcion_prueba_1), key1);
-    dispatch.attachHandle(Handler(*funcion_prueba_2), key2);
+    dispatch.attachHandle(Handler(&funcion_prueba_1), key1);
+    dispatch.attachHandle(Handler(&funcion_prueba_2), key2);
 
     Serial.println("Attach handle OK");
 
@@ -95,5 +107,5 @@ void setup() {
 }
 
 void loop() {
-    vTaskDelete(NULL);
+    vTaskDelete(NULL); // Las tasks fueron creadas en el setup(), no hay necesidad de usar loop()
 }

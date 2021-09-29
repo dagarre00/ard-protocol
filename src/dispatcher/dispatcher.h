@@ -3,6 +3,16 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include "exception.h"
+
+namespace dispatch_error {
+    static const int FULL = 1;
+    static const int EMPTY = 2;
+    static const int NOT_FOUND = 3;
+    static const int INVALID_PAYLOAD = 4;
+    static const int INVALID_KEY = 5;
+    static const int NO_HANDLERS = 6;
+};
 
 class Handler
 {
