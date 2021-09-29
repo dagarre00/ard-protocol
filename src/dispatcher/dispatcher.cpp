@@ -37,8 +37,8 @@ void Dispatcher::readPackage(uint8_t* package, uint8_t size) {
 uint8_t Dispatcher::getHandleIndex(const uint8_t key) {
     for (int i = 0; i < this->handler_index; i++) {
         if (key == this->added_keys[i]) {
-            return i;
             break;
+            return i;
         }
     }
     return -1;
