@@ -58,7 +58,7 @@ void parseDataTask(void* parameter) {
     while (true) {
         vTaskDelayUntil(&xLastWakeTime, read_freq / portTICK_PERIOD_MS); // Similar a delay()
         pack = dataParser(datalink, Serial); // Crea el pack de data
-        
+
         if (parsed_data) {
             // Buscar key unica
             if (pack.hasValue(0x0A)) {
@@ -85,7 +85,7 @@ void sendDataTask(void* parameter) {
     xLastWakeTime = xTaskGetTickCount();
     while (true) {
         Package output = Package(3);
-        output.addData(0xA4, 0);
+        output.addData(0xA4, 0x00FF);
         datalink.send(output.dump(), output.getSize(), Serial);
         vTaskDelayUntil(&xLastWakeTime, send_freq / portTICK_PERIOD_MS);
     }

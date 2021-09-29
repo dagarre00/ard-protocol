@@ -41,7 +41,7 @@ void Dispatcher::readPackage(uint8_t* package, uint8_t size) {
 
     for (int i = 0; i < size; i += 3) {
         local_key = package[i];
-        local_val = ((uint16_t)package[i + 2] << 8) | package[i + 1];
+        local_val = (package[i + 1] << 8) | (package[i + 2]);
         this->handleKey(local_key, local_val);
     }
 }
