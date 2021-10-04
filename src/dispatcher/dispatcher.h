@@ -32,7 +32,7 @@ public:
     void readPackage(uint8_t* package, uint8_t size);
     uint8_t getHandleIndex(const uint8_t key);
 private:
-    uint8_t size;
+    uint8_t buffer_size;
     void handleKey(uint8_t key, uint16_t value);
     void addHandle(uint8_t key, uint16_t(*func)(uint16_t));
     uint8_t handler_index = 0;

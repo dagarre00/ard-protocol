@@ -11,10 +11,11 @@ uint16_t Handler::execute(uint16_t value_to_pass) {
 Dispatcher::Dispatcher(uint8_t buffer_size) {
     this->added_keys = new uint8_t[buffer_size];
     this->handle_list = new Handler[buffer_size];
+    this->buffer_size = buffer_size;
 }
 
 void Dispatcher::attachHandle(Handler handle_user, uint8_t key) {
-    if (this->handler_index == 255) {
+    if (this->handler_index == this->buffer_size) {
         throw Exception(dispatch_error::FULL); //Stack de handlers full
     }
 
