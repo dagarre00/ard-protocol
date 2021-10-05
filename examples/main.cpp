@@ -1,17 +1,32 @@
 #include <Arduino.h>
+
 #include "datalink/datalink.h"
 #include "package/package.h"
 #include "dispatcher/dispatcher.h"
+
+#include "bme280/bme280.h"
+#include "rgb_led/rgb_led.h"
+
+const uint8_t HUMIDITY_KEY = 0xA4;
+const uint8_t TEMPERATURE_KEY = 0xA6;
+
+const uint8_t RED_LED_KEY = 0xB4;
+const uint8_t GREEN_LED_KEY = 0xB5;
+const uint8_t BLUE_LED_KEY = 0xB6;
+
+const uint8_t RED_LED_PIN = 13;
+const uint8_t GREEN_LED_PIN = 12;
+const uint8_t BLUE_LED_PIN = 14;
 
 Datalink datalink = Datalink(0x7E, 90);
 uint16_t send_freq = 3000;
 uint16_t read_freq = 100;
 Dispatcher dispatch = Dispatcher(255);
 
-long timer = millis();
+BME280 sensor((const uint8_t)0x76);
+Rgb_Led led(RED_LED_PIN, GREEN_LED_PIN, BLUE_LED_PIN);
 
-const uint8_t key1 = 0xA4;
-const uint8_t key2 = 0xA6;
+long timer = millis();
 
 bool parsed_data = false;
 
@@ -21,15 +36,9 @@ static Package pack = dataParser(datalink, Serial);
 
 // Funciones del dispatcher:
 
-uint16_t funcion_prueba_1(uint16_t val) {
-    Serial.print("Funcion prueba 1 con valor: ");
-    Serial.println(val);
-    return 0;
-}
-
-uint16_t funcion_prueba_2(uint16_t val) {
-    Serial.print("Funcion prueba 2 con valor: ");
-    Serial.println(val);
+uint16_t setRedLed(uint16_t val) {
+    uint8_t red_led_value = (uint8_t)val;
+    led.setRed(red_led_value);
     return 0;
 }
 
@@ -82,10 +91,11 @@ void parseDataTask(void* parameter) {
 
 void sendDataTask(void* parameter) {
     TickType_t xLastWakeTime;
-    xLastWakeTime = xTaskGetTickCount();
+    xLastWakeTime = xTaskGetTickCount();    
     while (true) {
-        Package output = Package(3);
-        output.addData(0xA4, 0x00FF);
+        Package output = Package(12);
+        output.addData(HUMIDITY_KEY, sensor.getHumidity());
+        output.addData(TEMPERATURE_KEY, sensor.getHumidity());
         datalink.send(output.dump(), output.getSize(), Serial);
         vTaskDelayUntil(&xLastWakeTime, send_freq / portTICK_PERIOD_MS);
     }
@@ -96,11 +106,18 @@ void sendDataTask(void* parameter) {
 void setup() {
     Serial.begin(115200);
     Serial.setTimeout(1000);
+    
+    led.setRed(200);
+    vTaskDelay(5000);
+    led.setRed(0);
+    led.setBlue(200);
+    vTaskDelay(5000);
+    led.setBlue(0);
+    led.setGreen(200);
+    vTaskDelay(5000);
+    led.setGreen(0);
 
-    dispatch.attachHandle(Handler(&funcion_prueba_1), key1);
-    dispatch.attachHandle(Handler(&funcion_prueba_2), key2);
-
-    Serial.println("Attach handle OK");
+    dispatch.attachHandle(Handler(&setRedLed), RED_LED_KEY);   
 
     xTaskCreate(parseDataTask, "Parse data periodically", 4096, NULL, 1, NULL);
     xTaskCreate(sendDataTask, "Send data periodically", 4096, NULL, 1, NULL);
