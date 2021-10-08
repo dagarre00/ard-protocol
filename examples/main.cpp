@@ -24,8 +24,6 @@ const uint8_t BLUE_LED_PIN = 14;
 
 //OBJETOS GLOBALES
 Datalink datalink = Datalink(0x7E, 90);
-uint16_t send_freq = 3000;
-uint16_t read_freq = 100;
 Dispatcher dispatch = Dispatcher(255);
 Rgb_Led led(RED_LED_PIN, GREEN_LED_PIN, BLUE_LED_PIN);
 Package dataParser(Datalink link, Stream& uart);
@@ -37,6 +35,8 @@ const char* TOPIC_SENSOR = "SDA/Equipo_DMS/Sensor";
 const char* MSG_TEMPLATE = "{\n  \"Temperatura\": %.1f,\n  \"Humedad\": %.1f\n}\0";
 
 //VARIABLES GLOBALES
+uint16_t send_freq = 3000;
+uint16_t read_freq = 100;
 long timer = millis();
 bool parsed_data = false;
 static Package pack = dataParser(datalink, Serial);
