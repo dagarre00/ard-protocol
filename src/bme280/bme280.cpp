@@ -10,10 +10,21 @@ BME280::BME280(const uint8_t i2c_addr) {
 }
 
 float BME280::getTemperature() {
-    return this->bme.readTemperature();
+    if (this->has_inited) {
+        return this->bme.readTemperature();
+    }
+    else {
+        return 0.0;
+    }
+
 }
 
 float BME280::getHumidity() {
-    return this->bme.readHumidity();
+    if (this->has_inited) {
+        return this->bme.readHumidity();
+    }
+    else {
+        return 0.0;
+    }
 }
 
